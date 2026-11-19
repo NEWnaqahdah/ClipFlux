@@ -1,0 +1,935 @@
+<Window x:Class="ClipFlux.MainWindow"
+        x:Name="RootWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="{DynamicResource Str_AppTitle}" Height="780" Width="1220"
+        MinWidth="880" MinHeight="560"
+        Icon="app.ico"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="{StaticResource ModernFont}"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="ClearType"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        PreviewKeyDown="Window_PreviewKeyDown">
+
+    <Window.Effect>
+        <DropShadowEffect x:Name="WindowDropShadow" BlurRadius="28" Direction="-90" RenderingBias="Quality" ShadowDepth="6" Color="#000000" Opacity="0.45"/>
+    </Window.Effect>
+
+    <Border x:Name="MainOuterBorder" Background="{DynamicResource BrushBgDeep}" CornerRadius="12" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1">
+        <Border.LayoutTransform>
+            <ScaleTransform x:Name="GlobalScaleTransform" ScaleX="1.0" ScaleY="1.0"/>
+        </Border.LayoutTransform>
+
+        <Grid>
+            <!-- Main Workspace -->
+            <Grid Margin="16,12,16,12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header, Search & Category Tabs -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                    <!-- Title & Control Bar -->
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Brand & Stats -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Background="{DynamicResource BrushAccent}" CornerRadius="7" Width="26" Height="26" Margin="0,0,10,0">
+                                <TextBlock Text="CF" Foreground="White" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="ClipFlux" Foreground="{DynamicResource BrushTextPrimary}" FontSize="17" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <Border Background="{DynamicResource BrushPillBg}" CornerRadius="10" Padding="10,3.5" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1" VerticalAlignment="Center">
+                                <TextBlock x:Name="TxtStats" Text="{DynamicResource Str_StatsDefault}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5"/>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Drag Handle -->
+                        <Border Grid.Column="1" Background="Transparent" MouseLeftButtonDown="Header_MouseDown"/>
+
+                        <!-- Window & Toolbar Actions (Clear History moved to Settings) -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button x:Name="BtnSettings" Content="{DynamicResource Str_BtnSettings}" Style="{StaticResource SecondaryPillButtonStyle}" Padding="12,5.5" Margin="0,0,10,0" Click="BtnSettings_Click"/>
+
+                            <Border Width="1" Height="16" Background="{DynamicResource BrushBorderSubtle}" Margin="0,0,10,0"/>
+
+                            <Button x:Name="BtnMinimize" ToolTip="{DynamicResource Str_TooltipMinimize}" Style="{StaticResource GhostIconButtonStyle}" Width="30" Height="30" Margin="0,0,2,0" Click="BtnMinimize_Click">
+                                <Path Data="M 1,5 H 10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="11" Height="10"/>
+                            </Button>
+                            <Button x:Name="BtnMaximize" ToolTip="{DynamicResource Str_TooltipMaximize}" Style="{StaticResource GhostIconButtonStyle}" Width="30" Height="30" Margin="0,0,2,0" Click="BtnMaximize_Click">
+                                <Path x:Name="PathMaximize" Data="M 1,1 H 10 V 10 H 1 Z" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.35" Width="11" Height="11"/>
+                            </Button>
+                            <Button x:Name="BtnClose" ToolTip="{DynamicResource Str_TooltipClose}" Style="{StaticResource SubtleCloseButtonStyle}" Width="30" Height="30" Click="BtnClose_Click">
+                                <Path Data="M 1,1 L 9,9 M 9,1 L 1,9" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="10" Height="10"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Search Bar -->
+                    <Border Background="{DynamicResource BrushBgSurface}" CornerRadius="9" Height="42" Margin="0,0,0,10" BorderThickness="1">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="BorderBrush" Value="{DynamicResource BrushBorderSubtle}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsKeyboardFocused, ElementName=TxtSearch}" Value="True">
+                                        <Setter Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Grid Margin="13,0,9,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Path Grid.Column="0" Data="M 6,1 A 5,5 0 1 0 6,11 A 5,5 0 1 0 6,1 Z M 9.6,9.6 L 13,13"
+                                  Stroke="{DynamicResource BrushTextMuted}" StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Width="15" Height="15" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+                            <TextBox x:Name="TxtSearch" Grid.Column="1" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource BrushTextPrimary}"
+                                     CaretBrush="{DynamicResource BrushAccent}" FontSize="14.5" VerticalAlignment="Center"
+                                     InputMethod.IsInputMethodEnabled="True"
+                                     TextChanged="TxtSearch_TextChanged">
+                                <TextBox.Style>
+                                    <Style TargetType="TextBox">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="TextBox">
+                                                    <Grid>
+                                                        <TextBlock x:Name="Placeholder" Text="{DynamicResource Str_SearchPlaceholder}"
+                                                                   Foreground="{DynamicResource BrushTextMuted}" FontSize="14"
+                                                                   VerticalAlignment="Center" IsHitTestVisible="False">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource TemplatedParent}}" Value="">
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                        <ScrollViewer x:Name="PART_ContentHost"/>
+                                                    </Grid>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </TextBox.Style>
+                            </TextBox>
+
+                            <Button x:Name="BtnClearSearch" Grid.Column="2" Style="{StaticResource GhostIconButtonStyle}"
+                                    Width="26" Height="26" Visibility="Collapsed" Click="BtnClearSearch_Click">
+                                <Path Data="M 2,2 L 8,8 M 8,2 L 2,8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.35" StrokeStartLineCap="Round" Width="10" Height="10"/>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- Category Filter Pills -->
+                    <ScrollViewer x:Name="NavFilterScroll" FontSize="14.5" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton x:Name="FilterAll" Content="{DynamicResource Str_Filter_All}" Style="{StaticResource FilterPillStyle}" IsChecked="True" Checked="Filter_Checked"/>
+                            <RadioButton x:Name="FilterText" Content="{DynamicResource Str_Filter_Text}" Style="{StaticResource FilterPillStyle}" Checked="Filter_Checked"/>
+                            <RadioButton x:Name="FilterRichText" Content="{DynamicResource Str_Filter_RichText}" Style="{StaticResource FilterPillStyle}" Checked="Filter_Checked"/>
+                            <RadioButton x:Name="FilterHtml" Content="{DynamicResource Str_Filter_Html}" Style="{StaticResource FilterPillStyle}" Checked="Filter_Checked"/>
+                            <RadioButton x:Name="FilterImage" Content="{DynamicResource Str_Filter_Image}" Style="{StaticResource FilterPillStyle}" Checked="Filter_Checked"/>
+                            <RadioButton x:Name="FilterFiles" Content="{DynamicResource Str_Filter_Files}" Style="{StaticResource FilterPillStyle}" Checked="Filter_Checked"/>
+                            <RadioButton x:Name="FilterStarred" Content="{DynamicResource Str_Filter_Starred}" Style="{StaticResource FilterPillStyle}" Checked="Filter_Checked"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </StackPanel>
+
+                <!-- Split View (List + Preview) -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="430" MinWidth="320"/>
+                        <ColumnDefinition Width="7"/>
+                        <ColumnDefinition Width="*" MinWidth="400"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left Column: Clip List -->
+                    <Grid Grid.Column="0" Margin="0,0,6,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Compact List Toolbar -->
+                        <Border Grid.Row="0" Margin="0,0,0,8" Padding="10,6" Background="{DynamicResource BrushBgSurface}" CornerRadius="8" BorderThickness="1" BorderBrush="{DynamicResource BrushBorderSubtle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock x:Name="TxtSelectionStatus" Text="0" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <Button x:Name="BtnLoadAll" Content="{DynamicResource Str_LoadAllCount}" ToolTip="{DynamicResource Str_LoadAllTip}" Style="{StaticResource GhostIconButtonStyle}" Foreground="{DynamicResource BrushAccent}" Padding="6,2" FontSize="12" Visibility="Collapsed" Click="BtnLoadAll_Click"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button x:Name="BtnSelectAll" Content="{DynamicResource Str_SelectAll}" ToolTip="{DynamicResource Str_SelectAllTip}" Style="{StaticResource GhostIconButtonStyle}" Padding="7,2.5" FontSize="12.5" Margin="0,0,2,0" Click="BtnSelectAll_Click"/>
+                                    <Button x:Name="BtnBatchStar" Content="{DynamicResource Str_Star}" ToolTip="{DynamicResource Str_BatchStarTip}" Style="{StaticResource GhostIconButtonStyle}" Padding="7,2.5" FontSize="12.5" Margin="0,0,2,0" Click="BtnBatchStar_Click"/>
+                                    <Button x:Name="BtnBatchDelete" Content="{DynamicResource Str_Delete}" ToolTip="{DynamicResource Str_BatchDeleteTip}" Style="{StaticResource GhostIconButtonStyle}" Foreground="{DynamicResource BrushDanger}" Padding="7,2.5" FontSize="12.5" Margin="0,0,2,0" Click="BtnBatchDelete_Click"/>
+                                    <Button x:Name="BtnClearCurrentCategory" Content="{DynamicResource Str_ClearCategory}" ToolTip="{DynamicResource Str_ClearCategoryTip}" Style="{StaticResource GhostIconButtonStyle}" Foreground="{DynamicResource BrushDanger}" Padding="7,2.5" FontSize="12.5" Click="BtnClearCurrentCategory_Click"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Card ListBox -->
+                        <ListBox x:Name="ClipList" Grid.Row="1" Background="Transparent" BorderThickness="0" FontSize="15.5"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.CanContentScroll="True"
+                                 VirtualizingStackPanel.IsVirtualizing="True"
+                                 VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                 SelectionMode="Extended"
+                                 SelectionChanged="ClipList_SelectionChanged"
+                                 MouseDoubleClick="ClipList_MouseDoubleClick">
+
+                            <ListBox.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{DynamicResource Str_Menu_Paste}" Click="MenuPaste_Click"/>
+                                    <MenuItem Header="{DynamicResource Str_Menu_PastePlain}" Click="MenuPastePlain_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="{DynamicResource Str_Menu_Copy}" Click="MenuCopy_Click"/>
+                                    <MenuItem Header="{DynamicResource Str_Menu_CopyPlain}" Click="MenuCopyPlain_Click"/>
+                                    <MenuItem Header="{DynamicResource Str_Menu_ToggleStar}" Click="MenuToggleStar_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="{DynamicResource Str_Menu_SelectAll}" Click="BtnSelectAll_Click"/>
+                                    <MenuItem Header="{DynamicResource Str_Menu_InvertSelect}" Click="BtnInvertSelect_Click"/>
+                                    <MenuItem Header="{DynamicResource Str_Menu_Delete}" Click="BtnDelete_Click"/>
+                                    <MenuItem Header="{DynamicResource Str_Menu_ClearCategory}" Click="BtnClearCurrentCategory_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="{DynamicResource Str_Menu_SaveFile}" Click="MenuSaveToFile_Click"/>
+                                    <MenuItem Header="{DynamicResource Str_Menu_OpenNotepad}" Click="MenuOpenInNotepad_Click"/>
+                                    <MenuItem Header="{DynamicResource Str_Menu_OpenUrlSearch}" Click="MenuOpenUrlOrSearch_Click"/>
+                                    <MenuItem Header="{DynamicResource Str_Menu_MultiPaste}" Click="MenuMultiplePaste_Click"/>
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
+
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource ClipCardItemStyle}">
+                                    <EventSetter Event="PreviewMouseRightButtonDown" Handler="ClipCard_PreviewMouseRightButtonDown"/>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Background="Transparent">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Row 0: Type Pill, Source App, Relative Time, Star -->
+                                        <Grid Grid.Row="0" Margin="0,0,0,7">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <Border Grid.Column="0" Background="{Binding TypeBadgeBackground}" CornerRadius="4" Padding="7,2" Margin="0,0,8,0">
+                                                <TextBlock Text="{Binding Type, Converter={StaticResource TypeToIconConv}}" Foreground="{Binding TypeBadgeForeground}" FontSize="11.5" FontWeight="Bold"/>
+                                            </Border>
+
+                                            <TextBlock Grid.Column="1" Text="{Binding AppNameDisplay}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,8,0"/>
+
+                                            <TextBlock Grid.Column="2" Text="{Binding TimeAgo}" Foreground="{DynamicResource BrushTextMuted}" FontSize="12" VerticalAlignment="Center"/>
+
+                                            <Button Grid.Column="3" Content="★" Style="{StaticResource GhostIconButtonStyle}"
+                                                    Foreground="{Binding IsStarred, Converter={StaticResource StarColorConv}}"
+                                                    FontSize="15" Padding="4,0" Tag="{Binding}" Click="BtnCardStar_Click"/>
+                                        </Grid>
+
+                                        <!-- Row 1: Title Snippet (Non-Image) -->
+                                        <TextBlock x:Name="TxtCardTitle" Grid.Row="1" Text="{Binding Title}" Foreground="{DynamicResource BrushTextPrimary}"
+                                                   FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                   TextTrimming="CharacterEllipsis" MaxHeight="54" TextWrapping="Wrap"
+                                                   Visibility="{Binding Type, Converter={StaticResource TypeIsNotImgConv}}"/>
+
+                                        <!-- Row 1: Thumbnail (Image) -->
+                                        <StackPanel Grid.Row="1" Visibility="{Binding Type, Converter={StaticResource TypeIsImgConv}}" Margin="0,2,0,0">
+                                            <Border Background="{DynamicResource BrushBgSurfaceAlt}" CornerRadius="6" HorizontalAlignment="Left" Padding="3" MaxHeight="88" MaxWidth="260" ClipToBounds="True">
+                                                <Image Source="{Binding ThumbnailImage}" Stretch="Uniform" MaxHeight="80" HorizontalAlignment="Left"/>
+                                            </Border>
+                                            <TextBlock Text="{Binding Description}" Foreground="{DynamicResource BrushTextMuted}" FontSize="12" Margin="2,4,0,0"/>
+                                        </StackPanel>
+
+                                        <!-- Row 2: Source / Bookmark URL -->
+                                        <Grid Grid.Row="2" Margin="0,7,0,0" Visibility="{Binding HasUrl, Converter={StaticResource BoolToVis}}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Path Grid.Column="0" Data="M 6,2 H 3 A 2,2 0 0 0 3,8 H 6 M 8,2 H 11 A 2,2 0 0 1 11,8 H 8 M 5,5 H 9"
+                                                  Stroke="{DynamicResource BrushLink}" StrokeThickness="1.25" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                  Stretch="Uniform" Width="15" Height="11" VerticalAlignment="Center" Opacity="0.88" Margin="0,0,6,0"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding DisplayUrl}" Foreground="{DynamicResource BrushLink}"
+                                                       FontSize="12.5" TextTrimming="CharacterEllipsis" Opacity="0.95" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <!-- Empty State -->
+                        <StackPanel x:Name="EmptyPlaceholder" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
+                            <TextBlock Text="{DynamicResource Str_EmptyTitle}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="15" FontWeight="Medium" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                            <TextBlock Text="{DynamicResource Str_EmptySubtitle}" Foreground="{DynamicResource BrushTextMuted}" FontSize="13" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Resizable Splitter -->
+                    <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" ShowsPreview="False">
+                        <GridSplitter.Template>
+                            <ControlTemplate TargetType="GridSplitter">
+                                <Border Background="Transparent">
+                                    <Border Width="1" Background="{DynamicResource BrushBorderSubtle}" HorizontalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </GridSplitter.Template>
+                    </GridSplitter>
+
+                    <!-- Right Column: Live Preview & Actions -->
+                    <Grid Grid.Column="2" Margin="8,0,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Preview Metadata & Mode Header (Balanced High-DPI Proportion) -->
+                        <Border Grid.Row="0" Background="{DynamicResource BrushBgSurface}" CornerRadius="9" Padding="15,12" Margin="0,0,0,10" BorderThickness="1" BorderBrush="{DynamicResource BrushBorderSubtle}">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Background="{Binding SelectedItem.TypeBadgeBackground, ElementName=ClipList}" CornerRadius="5" Padding="9,3" Margin="0,2,10,2">
+                                            <TextBlock Text="{Binding SelectedItem.TypeDisplayName, ElementName=ClipList}" Foreground="{Binding SelectedItem.TypeBadgeForeground, ElementName=ClipList}" FontSize="14" FontWeight="Bold"/>
+                                        </Border>
+                                        <TextBlock Text="{Binding SelectedItem.AppNameDisplay, ElementName=ClipList}" Foreground="{DynamicResource BrushTextPrimary}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,2,10,2"/>
+                                        <TextBlock Text="{Binding SelectedItem.Created, ElementName=ClipList, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" Foreground="{DynamicResource BrushTextMuted}" FontSize="14" VerticalAlignment="Center" Margin="0,2,10,2"/>
+                                        <Border Background="{DynamicResource BrushPillBg}" CornerRadius="5" Padding="8,2.5" Margin="0,2,0,2" Visibility="{Binding SelectedItem, ElementName=ClipList, Converter={StaticResource NullToVis}}">
+                                            <TextBlock Text="{Binding SelectedItem.FormattedSize, ElementName=ClipList}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="13.5" FontWeight="Medium"/>
+                                        </Border>
+                                    </WrapPanel>
+
+                                    <!-- Preview Mode Switcher -->
+                                    <Border x:Name="PreviewModeBar" Grid.Column="1" Background="{DynamicResource BrushBgSurfaceAlt}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="3" Margin="10,0,0,0" VerticalAlignment="Top" Visibility="Collapsed">
+                                        <StackPanel Orientation="Horizontal">
+                                            <RadioButton x:Name="ModeFormatted" Content="{DynamicResource Str_Mode_WebView}" Style="{StaticResource PreviewModeTabStyle}" IsChecked="True" Checked="PreviewMode_Checked"/>
+                                            <RadioButton x:Name="ModePlainText" Content="{DynamicResource Str_Mode_PlainText}" Style="{StaticResource PreviewModeTabStyle}" Margin="3,0,0,0" Checked="PreviewMode_Checked"/>
+                                            <RadioButton x:Name="ModeSource" Content="{DynamicResource Str_Mode_Source}" Style="{StaticResource PreviewModeTabStyle}" Margin="3,0,0,0" Checked="PreviewMode_Checked"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Window Title -->
+                                <TextBlock x:Name="TxtPreviewAppTitle"
+                                           Text="{Binding SelectedItem.AppTitle, ElementName=ClipList}"
+                                           ToolTip="{Binding SelectedItem.AppTitle, ElementName=ClipList}"
+                                           Foreground="{DynamicResource BrushTextSecondary}" FontSize="14.5" TextTrimming="CharacterEllipsis" Margin="0,7,0,0"
+                                           Visibility="{Binding SelectedItem.AppTitle, ElementName=ClipList, Converter={StaticResource StrNotEmptyToVis}}"/>
+
+                                <!-- URL Pill Bar -->
+                                <Border x:Name="UrlPreviewBar" Background="{DynamicResource BrushBgSurfaceAlt}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1" CornerRadius="7" Padding="10,6" Margin="0,8,0,0"
+                                        Visibility="{Binding SelectedItem.HasUrl, ElementName=ClipList, Converter={StaticResource BoolToVis}}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Path Grid.Column="0" Data="M 6,2 H 3 A 2,2 0 0 0 3,8 H 6 M 8,2 H 11 A 2,2 0 0 1 11,8 H 8 M 5,5 H 9"
+                                              Stroke="{DynamicResource BrushLink}" StrokeThickness="1.3" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                              Stretch="Uniform" Width="16" Height="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+
+                                        <Button x:Name="BtnOpenPreviewUrl" Grid.Column="1" HorizontalContentAlignment="Left" Cursor="Hand"
+                                                ToolTip="{DynamicResource Str_OpenUrlTip}" Click="BtnOpenPreviewUrl_Click"
+                                                Background="Transparent" BorderThickness="0" Padding="0">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <ContentPresenter VerticalAlignment="Center"/>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                            <TextBlock x:Name="TxtPreviewUrl"
+                                                       Text="{Binding SelectedItem.DisplayUrl, ElementName=ClipList}"
+                                                       ToolTip="{Binding SelectedItem.DisplayUrl, ElementName=ClipList}"
+                                                       Foreground="{DynamicResource BrushLink}" FontSize="14.5" TextTrimming="CharacterEllipsis">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="TextDecorations" Value="Underline"/>
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Button>
+
+                                        <Button x:Name="BtnCopyPreviewUrl" Grid.Column="2" Content="{DynamicResource Str_CopyUrl}" Style="{StaticResource GhostIconButtonStyle}"
+                                                Padding="10,3" FontSize="13.5" Foreground="{DynamicResource BrushTextSecondary}" Margin="10,0,0,0"
+                                                Click="BtnCopyPreviewUrl_Click"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Preview Content Surface -->
+                        <Border Grid.Row="1" Background="{DynamicResource BrushBgSurface}" CornerRadius="9" Padding="15" Margin="0,0,0,10" BorderThickness="1" BorderBrush="{DynamicResource BrushBorderSubtle}">
+                            <Grid>
+                                <FlowDocumentScrollViewer x:Name="RichPreviewViewer"
+                                                          IsToolBarVisible="False"
+                                                          VerticalScrollBarVisibility="Auto"
+                                                          HorizontalScrollBarVisibility="Disabled"
+                                                          Background="Transparent"
+                                                          BorderThickness="0"
+                                                          FontSize="18"
+                                                          Foreground="{DynamicResource BrushTextPrimary}"
+                                                          Visibility="Collapsed"/>
+
+                                <ScrollViewer x:Name="TextPreviewScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
+                                    <TextBox x:Name="TxtPreviewContent"
+                                             Background="Transparent" BorderThickness="0" Foreground="{DynamicResource BrushTextPrimary}"
+                                             FontFamily="{StaticResource CodeFont}" FontSize="18"
+                                             TextWrapping="Wrap" IsReadOnly="True" AcceptsReturn="True"/>
+                                </ScrollViewer>
+
+                                <Grid x:Name="ImagePreviewPanel" Visibility="Collapsed">
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                                        <Image Source="{Binding SelectedItem.BitmapImage, ElementName=ClipList}"
+                                               Stretch="Uniform" MaxHeight="520" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </ScrollViewer>
+                                </Grid>
+
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                                            Visibility="{Binding SelectedItem, ElementName=ClipList, Converter={StaticResource InvNullToVis}}">
+                                    <TextBlock Text="{DynamicResource Str_EmptySelection}" Foreground="{DynamicResource BrushTextMuted}" FontSize="15"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Preview Action Buttons -->
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                <Button x:Name="BtnPaste" Content="{DynamicResource Str_BtnPaste}" Style="{StaticResource PillButtonStyle}" Margin="0,0,8,0" Click="BtnPaste_Click"/>
+                                <Button x:Name="BtnPastePlain" Content="{DynamicResource Str_BtnPastePlain}" Style="{StaticResource SecondaryPillButtonStyle}" Margin="0,0,8,0" Click="BtnPastePlain_Click"/>
+                                <Button x:Name="BtnCopy" Content="{DynamicResource Str_BtnCopy}" Style="{StaticResource SecondaryPillButtonStyle}" Margin="0,0,8,0" Click="BtnCopy_Click"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Button x:Name="BtnToggleStar" Content="{DynamicResource Str_BtnStar}" Style="{StaticResource SecondaryPillButtonStyle}" Margin="0,0,8,0" Click="BtnToggleStar_Click"/>
+                                <Button x:Name="BtnDelete" Content="{DynamicResource Str_BtnDelete}" Style="{StaticResource DangerGhostButtonStyle}" Click="BtnDelete_Click"/>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Grid>
+
+                <!-- Bottom Status Bar -->
+                <Grid Grid.Row="2" Margin="0,11,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Str_Status_Label}" Foreground="{DynamicResource BrushTextMuted}" FontSize="12.5" Margin="0,0,8,0"/>
+                        <TextBlock Text="{DynamicResource Str_Status_DblClick}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5"/>
+                        <TextBlock Text=" • " Foreground="{DynamicResource BrushTextMuted}" FontSize="12.5"/>
+                        <TextBlock Text="{DynamicResource Str_Status_ShiftEnter}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5"/>
+                        <TextBlock Text=" • " Foreground="{DynamicResource BrushTextMuted}" FontSize="12.5"/>
+                        <TextBlock Text="{DynamicResource Str_Status_Copy}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5"/>
+                        <TextBlock Text=" • " Foreground="{DynamicResource BrushTextMuted}" FontSize="12.5"/>
+                        <TextBlock Text="{DynamicResource Str_Status_Star}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5"/>
+                        <TextBlock Text=" • " Foreground="{DynamicResource BrushTextMuted}" FontSize="12.5"/>
+                        <TextBlock Text="{DynamicResource Str_Status_SelectAll}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5"/>
+                        <TextBlock Text=" • " Foreground="{DynamicResource BrushTextMuted}" FontSize="12.5"/>
+                        <TextBlock Text="{DynamicResource Str_Status_Del}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5"/>
+                        <TextBlock Text=" • " Foreground="{DynamicResource BrushTextMuted}" FontSize="12.5"/>
+                        <TextBlock Text="{DynamicResource Str_Status_Esc}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5"/>
+                        <TextBlock Text=" • " Foreground="{DynamicResource BrushTextMuted}" FontSize="12.5"/>
+                        <TextBlock x:Name="TxtHotkeyLegend" Text="{DynamicResource Str_Hotkey_LegendOff}" Foreground="{DynamicResource BrushAccent}" FontSize="12.5"/>
+                    </WrapPanel>
+
+                    <TextBlock x:Name="TxtStatus" Grid.Column="1" Text="{DynamicResource Str_Status_Ready}" Foreground="{DynamicResource BrushTextMuted}" FontSize="12.5" VerticalAlignment="Center"/>
+                </Grid>
+            </Grid>
+
+            <!-- 3-Tab Settings Overlay -->
+            <Border x:Name="SettingsOverlay" Background="{DynamicResource BrushOverlayBackdrop}" CornerRadius="12" Visibility="Collapsed">
+                <Border Background="{DynamicResource BrushBgSurface}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1"
+                        CornerRadius="12" Width="640" MaxHeight="700" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="25" ShadowDepth="4" Opacity="0.35"/>
+                    </Border.Effect>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Header -->
+                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource Str_Settings_Title}" Foreground="{DynamicResource BrushTextPrimary}" FontSize="18" FontWeight="Bold"/>
+                            <Button Style="{StaticResource GhostIconButtonStyle}" HorizontalAlignment="Right" Width="28" Height="28" Click="BtnCloseSettings_Click">
+                                <Path Data="M 1,1 L 9,9 M 9,1 L 1,9" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="10" Height="10"/>
+                            </Button>
+                        </Grid>
+
+                        <!-- 3-Tab Selector Bar -->
+                        <Border Grid.Row="1" Background="{DynamicResource BrushBgSurfaceAlt}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1"
+                                CornerRadius="8" Padding="4" HorizontalAlignment="Left" Margin="0,0,0,14">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton x:Name="TabSettingsGeneral" GroupName="SettingsTabGroup" Content="{DynamicResource Str_Settings_TabGeneral}" Style="{StaticResource SettingsTabStyle}" IsChecked="True" Checked="SettingsTab_Checked"/>
+                                <RadioButton x:Name="TabSettingsAppearance" GroupName="SettingsTabGroup" Content="{DynamicResource Str_Settings_TabAppearance}" Style="{StaticResource SettingsTabStyle}" Margin="4,0,0,0" Checked="SettingsTab_Checked"/>
+                                <RadioButton x:Name="TabSettingsBackup" GroupName="SettingsTabGroup" Content="{DynamicResource Str_Settings_TabBackup}" Style="{StaticResource SettingsTabStyle}" Margin="4,0,0,0" Checked="SettingsTab_Checked"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Tab Content Scroll Area -->
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,0,0,16">
+                            <Grid>
+                                <!-- TAB 1: GENERAL -->
+                                <StackPanel x:Name="PanelSettingsGeneral">
+                                    <TextBlock Text="{DynamicResource Str_Set_SystemSection}" Foreground="{DynamicResource BrushAccent}" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="15,13" Margin="0,0,0,16">
+                                        <StackPanel>
+                                            <CheckBox x:Name="ChkAutoStart" Content="{DynamicResource Str_Set_AutoStart}"
+                                                      Foreground="{DynamicResource BrushTextPrimary}" FontSize="13.5" Margin="0,0,0,12"/>
+
+                                            <CheckBox x:Name="ChkEnableHotkey" Content="{DynamicResource Str_Set_EnableHotkey}"
+                                                      Foreground="{DynamicResource BrushTextPrimary}" FontSize="13.5" Margin="0,0,0,10"
+                                                      Checked="ChkEnableHotkey_CheckChanged" Unchecked="ChkEnableHotkey_CheckChanged"/>
+
+                                            <StackPanel x:Name="PanelHotkeyChoice" Margin="25,0,0,4" Opacity="0.45" IsEnabled="False">
+                                                <TextBlock Text="{DynamicResource Str_Set_CustomHotkey}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5" Margin="0,0,0,6"/>
+                                                <Grid Margin="0,0,0,8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBox x:Name="TxtCustomHotkey" Grid.Column="0" IsReadOnly="True" Cursor="Hand"
+                                                             Style="{StaticResource SettingsInputBoxStyle}" FontWeight="SemiBold"
+                                                             PreviewKeyDown="TxtCustomHotkey_PreviewKeyDown"
+                                                             GotFocus="TxtCustomHotkey_GotFocus"
+                                                             LostFocus="TxtCustomHotkey_LostFocus"/>
+                                                    <Button x:Name="BtnClearHotkey" Grid.Column="1" Content="{DynamicResource Str_Set_RestoreDefault}" Style="{StaticResource SecondaryPillButtonStyle}"
+                                                            Height="36" Margin="8,0,0,0" Padding="12,0" Click="BtnClearHotkey_Click"/>
+                                                </Grid>
+
+                                                <WrapPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                    <TextBlock Text="{DynamicResource Str_Set_QuickPresets}" Foreground="{DynamicResource BrushTextMuted}" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                    <Button Content="Alt + V" Style="{StaticResource GhostIconButtonStyle}" FontSize="12" Padding="8,3" Margin="0,0,6,4"
+                                                            Background="{DynamicResource BrushPillBg}" Foreground="{DynamicResource BrushTextSecondary}" Click="BtnPresetHotkey_Click" Tag="Alt+V"/>
+                                                    <Button Content="Ctrl + D" Style="{StaticResource GhostIconButtonStyle}" FontSize="12" Padding="8,3" Margin="0,0,6,4"
+                                                            Background="{DynamicResource BrushPillBg}" Foreground="{DynamicResource BrushTextSecondary}" Click="BtnPresetHotkey_Click" Tag="Ctrl+D"/>
+                                                    <Button Content="Alt + Space" Style="{StaticResource GhostIconButtonStyle}" FontSize="12" Padding="8,3" Margin="0,0,6,4"
+                                                            Background="{DynamicResource BrushPillBg}" Foreground="{DynamicResource BrushTextSecondary}" Click="BtnPresetHotkey_Click" Tag="Alt+Space"/>
+                                                    <Button Content="Ctrl + Shift + V" Style="{StaticResource GhostIconButtonStyle}" FontSize="12" Padding="8,3" Margin="0,0,6,4"
+                                                            Background="{DynamicResource BrushPillBg}" Foreground="{DynamicResource BrushTextSecondary}" Click="BtnPresetHotkey_Click" Tag="Ctrl+Shift+V"/>
+                                                    <Button Content="F9" Style="{StaticResource GhostIconButtonStyle}" FontSize="12" Padding="8,3" Margin="0,0,6,4"
+                                                            Background="{DynamicResource BrushPillBg}" Foreground="{DynamicResource BrushTextSecondary}" Click="BtnPresetHotkey_Click" Tag="F9"/>
+                                                </WrapPanel>
+
+                                                <TextBlock x:Name="TxtHotkeyStatusHint" Text="{DynamicResource Str_Set_HotkeyHint}"
+                                                           Foreground="{DynamicResource BrushTextMuted}" FontSize="12" Margin="2,2,0,0"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <TextBlock Text="{DynamicResource Str_Set_ListBehavior}" Foreground="{DynamicResource BrushAccent}" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="15,13">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,4">
+                                                <TextBlock Text="{DynamicResource Str_Set_TrayCount}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="13"/>
+                                                <TextBlock x:Name="TxtTrayRecentCountVal" Text="5" Foreground="{DynamicResource BrushTextPrimary}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                            </Grid>
+                                            <Slider x:Name="SliderTrayRecentCount" Minimum="1" Maximum="20" Value="5" IsSnapToTickEnabled="True" TickFrequency="1"
+                                                    SmallChange="1" LargeChange="5" ValueChanged="SliderTrayRecentCount_ValueChanged" Margin="0,0,0,12"/>
+
+                                            <Grid Margin="0,0,0,4">
+                                                <TextBlock Text="{DynamicResource Str_Set_MaxDisplay}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="13"/>
+                                                <TextBlock x:Name="TxtMaxDisplayCountVal" Text="1000" Foreground="{DynamicResource BrushTextPrimary}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                            </Grid>
+                                            <Slider x:Name="SliderMaxDisplayCount" Minimum="500" Maximum="5000" Value="1000" IsSnapToTickEnabled="True" TickFrequency="500"
+                                                    SmallChange="100" LargeChange="500" ValueChanged="SliderMaxDisplayCount_ValueChanged"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- TAB 2: APPEARANCE & LANGUAGE -->
+                                <StackPanel x:Name="PanelSettingsAppearance" Visibility="Collapsed">
+                                    <TextBlock Text="{DynamicResource Str_Set_LangThemeSection}" Foreground="{DynamicResource BrushAccent}" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="15,13" Margin="0,0,0,16">
+                                        <StackPanel>
+                                            <TextBlock Text="{DynamicResource Str_Set_Language}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="13" Margin="0,0,0,6"/>
+                                            <Border Background="{DynamicResource BrushBgSurfaceAlt}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1"
+                                                    CornerRadius="7" Padding="3" HorizontalAlignment="Left" Margin="0,0,0,14">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <RadioButton x:Name="LangSystem" GroupName="LangGroup" Content="{DynamicResource Str_Set_LangSystem}" Tag="System" Style="{StaticResource SegmentedOptionStyle}" IsChecked="True" Checked="LangOption_Checked"/>
+                                                    <RadioButton x:Name="LangZhCn" GroupName="LangGroup" Content="{DynamicResource Str_Set_LangZh}" Tag="zh-CN" Style="{StaticResource SegmentedOptionStyle}" Margin="3,0,0,0" Checked="LangOption_Checked"/>
+                                                    <RadioButton x:Name="LangEnUs" GroupName="LangGroup" Content="{DynamicResource Str_Set_LangEn}" Tag="en-US" Style="{StaticResource SegmentedOptionStyle}" Margin="3,0,0,0" Checked="LangOption_Checked"/>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <TextBlock Text="{DynamicResource Str_Set_Theme}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="13" Margin="0,0,0,6"/>
+                                            <Border Background="{DynamicResource BrushBgSurfaceAlt}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1"
+                                                    CornerRadius="7" Padding="3" HorizontalAlignment="Left">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <RadioButton x:Name="ThemeSystem" GroupName="ThemeGroup" Content="{DynamicResource Str_Set_ThemeSystem}" Tag="System" Style="{StaticResource SegmentedOptionStyle}" IsChecked="True" Checked="ThemeOption_Checked"/>
+                                                    <RadioButton x:Name="ThemeLight" GroupName="ThemeGroup" Content="{DynamicResource Str_Set_ThemeLight}" Tag="Light" Style="{StaticResource SegmentedOptionStyle}" Margin="3,0,0,0" Checked="ThemeOption_Checked"/>
+                                                    <RadioButton x:Name="ThemeDark" GroupName="ThemeGroup" Content="{DynamicResource Str_Set_ThemeDark}" Tag="Dark" Style="{StaticResource SegmentedOptionStyle}" Margin="3,0,0,0" Checked="ThemeOption_Checked"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <TextBlock Text="{DynamicResource Str_Set_TypographySection}" Foreground="{DynamicResource BrushAccent}" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="15,13">
+                                        <StackPanel>
+                                            <TextBlock Text="{DynamicResource Str_Set_FontFamily}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="13" Margin="0,0,0,6"/>
+                                            <ComboBox x:Name="CmbFontFamily" Margin="0,0,0,14" SelectionChanged="CmbFontFamily_SelectionChanged">
+                                                <ComboBoxItem Content="Segoe UI Variable Text / Microsoft YaHei UI" Tag="Segoe UI Variable Text, Microsoft YaHei UI, Segoe UI" IsSelected="True"/>
+                                                <ComboBoxItem Content="Microsoft YaHei UI (微软雅黑)" Tag="Microsoft YaHei UI"/>
+                                                <ComboBoxItem Content="Segoe UI" Tag="Segoe UI"/>
+                                                <ComboBoxItem Content="SimSun (宋体)" Tag="SimSun"/>
+                                                <ComboBoxItem Content="SimHei (黑体)" Tag="SimHei"/>
+                                                <ComboBoxItem Content="Cascadia Code" Tag="Cascadia Code"/>
+                                                <ComboBoxItem Content="Consolas" Tag="Consolas"/>
+                                            </ComboBox>
+
+                                            <Grid Margin="0,0,0,4">
+                                                <TextBlock Text="{DynamicResource Str_Set_NavFontSize}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="13"/>
+                                                <TextBlock x:Name="TxtNavFontSizeVal" Text="14.5 px" Foreground="{DynamicResource BrushTextPrimary}" FontSize="13" HorizontalAlignment="Right"/>
+                                            </Grid>
+                                            <Slider x:Name="SliderNavFontSize" Minimum="12" Maximum="22" Value="14.5" SmallChange="0.5" LargeChange="2"
+                                                    ValueChanged="SliderNavFontSize_ValueChanged" Margin="0,0,0,10"/>
+
+                                            <Grid Margin="0,0,0,4">
+                                                <TextBlock Text="{DynamicResource Str_Set_ListFontSize}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="13"/>
+                                                <TextBlock x:Name="TxtListFontSizeVal" Text="15.5 px" Foreground="{DynamicResource BrushTextPrimary}" FontSize="13" HorizontalAlignment="Right"/>
+                                            </Grid>
+                                            <Slider x:Name="SliderListFontSize" Minimum="12" Maximum="24" Value="15.5" SmallChange="0.5" LargeChange="2"
+                                                    ValueChanged="SliderListFontSize_ValueChanged" Margin="0,0,0,10"/>
+
+                                            <Grid Margin="0,0,0,4">
+                                                <TextBlock Text="{DynamicResource Str_Set_PreviewFontSize}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="13"/>
+                                                <TextBlock x:Name="TxtPreviewFontSizeVal" Text="18.0 px" Foreground="{DynamicResource BrushTextPrimary}" FontSize="13" HorizontalAlignment="Right"/>
+                                            </Grid>
+                                            <Slider x:Name="SliderPreviewFontSize" Minimum="12" Maximum="30" Value="18" SmallChange="0.5" LargeChange="2"
+                                                    ValueChanged="SliderPreviewFontSize_ValueChanged" Margin="0,0,0,10"/>
+
+                                            <Grid Margin="0,0,0,4">
+                                                <TextBlock Text="{DynamicResource Str_Set_GlobalScale}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="13"/>
+                                                <TextBlock x:Name="TxtGlobalScaleVal" Text="100%" Foreground="{DynamicResource BrushTextPrimary}" FontSize="13" HorizontalAlignment="Right"/>
+                                            </Grid>
+                                            <Slider x:Name="SliderGlobalScale" Minimum="0.8" Maximum="1.5" Value="1.0" SmallChange="0.05" LargeChange="0.1"
+                                                    ValueChanged="SliderGlobalScale_ValueChanged"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- TAB 3: BACKUP & DATA -->
+                                <StackPanel x:Name="PanelSettingsBackup" Visibility="Collapsed">
+                                    <!-- Manual & Local Backup -->
+                                    <TextBlock Text="{DynamicResource Str_Bak_ManualSection}" Foreground="{DynamicResource BrushAccent}" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="15,13" Margin="0,0,0,14">
+                                        <StackPanel>
+                                            <TextBlock Text="{DynamicResource Str_Bak_LocalDirLabel}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5" Margin="0,0,0,6"/>
+                                            <Grid Margin="0,0,0,10">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox x:Name="TxtLocalBackupDir" Grid.Column="0" Style="{StaticResource SettingsInputBoxStyle}"/>
+                                                <Button x:Name="BtnBrowseLocalBackup" Grid.Column="1" Content="{DynamicResource Str_Bak_Browse}" Style="{StaticResource SecondaryPillButtonStyle}" Height="36" Margin="8,0,0,0" Click="BtnBrowseLocalBackup_Click"/>
+                                            </Grid>
+
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="BtnBackupNow" Grid.Column="0" Content="{DynamicResource Str_Bak_Now}" Style="{StaticResource PillButtonStyle}" Margin="0,0,8,0" Click="BtnBackupNow_Click"/>
+                                                <Button x:Name="BtnBackupSaveAs" Grid.Column="1" Content="{DynamicResource Str_Bak_SaveAs}" Style="{StaticResource SecondaryPillButtonStyle}" Click="BtnBackupSaveAs_Click"/>
+                                                <TextBlock x:Name="TxtBackupStatus" Grid.Column="2" Text="{DynamicResource Str_Bak_Never}" Foreground="{DynamicResource BrushTextMuted}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" Margin="10,0,0,0"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Scheduled Backup -->
+                                    <TextBlock Text="{DynamicResource Str_Bak_ScheduleSection}" Foreground="{DynamicResource BrushAccent}" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="15,13" Margin="0,0,0,14">
+                                        <StackPanel>
+                                            <CheckBox x:Name="ChkEnableScheduledBackup" Content="{DynamicResource Str_Bak_EnableSchedule}" FontSize="13.5" Margin="0,0,0,10"
+                                                      Checked="ChkEnableScheduledBackup_Changed" Unchecked="ChkEnableScheduledBackup_Changed"/>
+
+                                            <Grid x:Name="PanelScheduleOptions" Margin="25,0,0,0" Opacity="0.45" IsEnabled="False">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="12"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{DynamicResource Str_Bak_Interval}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5" Margin="0,0,0,5"/>
+                                                    <ComboBox x:Name="CmbBackupInterval">
+                                                        <ComboBoxItem Content="{DynamicResource Str_Bak_Int6h}" Tag="6"/>
+                                                        <ComboBoxItem Content="{DynamicResource Str_Bak_Int12h}" Tag="12"/>
+                                                        <ComboBoxItem Content="{DynamicResource Str_Bak_Int24h}" Tag="24" IsSelected="True"/>
+                                                        <ComboBoxItem Content="{DynamicResource Str_Bak_Int72h}" Tag="72"/>
+                                                        <ComboBoxItem Content="{DynamicResource Str_Bak_Int168h}" Tag="168"/>
+                                                    </ComboBox>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="{DynamicResource Str_Bak_Retention}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5" Margin="0,0,0,5"/>
+                                                    <ComboBox x:Name="CmbBackupRetention">
+                                                        <ComboBoxItem Content="3" Tag="3"/>
+                                                        <ComboBoxItem Content="5" Tag="5"/>
+                                                        <ComboBoxItem Content="7" Tag="7" IsSelected="True"/>
+                                                        <ComboBoxItem Content="15" Tag="15"/>
+                                                        <ComboBoxItem Content="30" Tag="30"/>
+                                                    </ComboBox>
+                                                </StackPanel>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Cloud Sync Drive Backup -->
+                                    <TextBlock Text="{DynamicResource Str_Bak_CloudSection}" Foreground="{DynamicResource BrushAccent}" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="15,13" Margin="0,0,0,14">
+                                        <StackPanel>
+                                            <CheckBox x:Name="ChkEnableCloudBackup" Content="{DynamicResource Str_Bak_EnableCloud}" FontSize="13.5" Margin="0,0,0,10"
+                                                      Checked="ChkEnableCloudBackup_Changed" Unchecked="ChkEnableCloudBackup_Changed"/>
+
+                                            <StackPanel x:Name="PanelCloudOptions" Margin="25,0,0,0" Opacity="0.45" IsEnabled="False">
+                                                <TextBlock Text="{DynamicResource Str_Bak_CloudSelect}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5" Margin="0,0,0,6"/>
+                                                <Grid Margin="0,0,0,6">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <ComboBox x:Name="CmbCloudDrives" Grid.Column="0" SelectionChanged="CmbCloudDrives_SelectionChanged"/>
+                                                    <Button x:Name="BtnBrowseCloudFolder" Grid.Column="1" Content="{DynamicResource Str_Bak_Browse}" Style="{StaticResource SecondaryPillButtonStyle}" Height="36" Margin="8,0,0,0" Click="BtnBrowseCloudFolder_Click"/>
+                                                </Grid>
+                                                <TextBlock x:Name="TxtCloudBackupTarget" Text="{DynamicResource Str_Bak_CloudNone}" Foreground="{DynamicResource BrushTextMuted}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- WebDAV Remote Backup -->
+                                    <TextBlock Text="{DynamicResource Str_Bak_WebDavSection}" Foreground="{DynamicResource BrushAccent}" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="15,13" Margin="0,0,0,14">
+                                        <StackPanel>
+                                            <CheckBox x:Name="ChkEnableWebDavBackup" Content="{DynamicResource Str_Bak_EnableWebDav}" FontSize="13.5" Margin="0,0,0,10"
+                                                      Checked="ChkEnableWebDavBackup_Changed" Unchecked="ChkEnableWebDavBackup_Changed"/>
+
+                                            <StackPanel x:Name="PanelWebDavOptions" Margin="25,0,0,0" Opacity="0.45" IsEnabled="False">
+                                                <WrapPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                    <TextBlock Text="{DynamicResource Str_Set_QuickPresets}" Foreground="{DynamicResource BrushTextMuted}" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                    <Button Content="{DynamicResource Str_Bak_PresetNutstore}" Style="{StaticResource GhostIconButtonStyle}" FontSize="12" Padding="8,3" Margin="0,0,6,0" Background="{DynamicResource BrushPillBg}" Click="BtnWebDavPreset_Click" Tag="Nutstore"/>
+                                                    <Button Content="{DynamicResource Str_Bak_PresetNextcloud}" Style="{StaticResource GhostIconButtonStyle}" FontSize="12" Padding="8,3" Margin="0,0,6,0" Background="{DynamicResource BrushPillBg}" Click="BtnWebDavPreset_Click" Tag="Nextcloud"/>
+                                                    <Button Content="{DynamicResource Str_Bak_PresetAlist}" Style="{StaticResource GhostIconButtonStyle}" FontSize="12" Padding="8,3" Background="{DynamicResource BrushPillBg}" Click="BtnWebDavPreset_Click" Tag="Alist"/>
+                                                </WrapPanel>
+
+                                                <TextBlock Text="{DynamicResource Str_Bak_WebDavUrl}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5" Margin="0,0,0,4"/>
+                                                <TextBox x:Name="TxtWebDavUrl" Style="{StaticResource SettingsInputBoxStyle}" Margin="0,0,0,10"/>
+
+                                                <Grid Margin="0,0,0,10">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="12"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="{DynamicResource Str_Bak_WebDavUser}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5" Margin="0,0,0,4"/>
+                                                        <TextBox x:Name="TxtWebDavUser" Style="{StaticResource SettingsInputBoxStyle}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2">
+                                                        <TextBlock Text="{DynamicResource Str_Bak_WebDavPwd}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5" Margin="0,0,0,4"/>
+                                                        <PasswordBox x:Name="PwdWebDav" Style="{StaticResource SettingsPasswordBoxStyle}"/>
+                                                    </StackPanel>
+                                                </Grid>
+
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Button x:Name="BtnTestWebDav" Content="{DynamicResource Str_Bak_TestConn}" Style="{StaticResource SecondaryPillButtonStyle}" Click="BtnTestWebDav_Click"/>
+                                                    <TextBlock x:Name="TxtWebDavTestStatus" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Migration & Danger Zone -->
+                                    <TextBlock Text="{DynamicResource Str_Data_Section}" Foreground="{DynamicResource BrushAccent}" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="15,13" Margin="0,0,0,10">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                <TextBlock Text="{DynamicResource Str_Data_ImportTitle}" Foreground="{DynamicResource BrushTextPrimary}" FontSize="13.5" FontWeight="Medium"/>
+                                                <TextBlock x:Name="TxtDbInfo" Text="..." Foreground="{DynamicResource BrushTextMuted}" FontSize="12" Margin="0,3,0,0"/>
+                                            </StackPanel>
+                                            <Button x:Name="BtnImport" Grid.Column="1" Content="{DynamicResource Str_Data_ImportBtn}" Style="{StaticResource SecondaryPillButtonStyle}" Click="BtnImport_Click"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Background="{DynamicResource BrushDangerHoverBg}" BorderBrush="{DynamicResource BrushDangerBorder}" BorderThickness="1" CornerRadius="8" Padding="15,13">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                <TextBlock Text="{DynamicResource Str_Data_ClearTitle}" Foreground="{DynamicResource BrushDanger}" FontSize="13.5" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{DynamicResource Str_Data_ClearDesc}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                            </StackPanel>
+                                            <Button x:Name="BtnClearHistory" Grid.Column="1" Content="{DynamicResource Str_Data_ClearBtn}" Style="{StaticResource DangerGhostButtonStyle}" Click="BtnClear_Click"/>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                        </ScrollViewer>
+
+                        <!-- Settings Footer -->
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="{DynamicResource Str_BtnResetDefault}" Style="{StaticResource SecondaryPillButtonStyle}" Margin="0,0,8,0" Click="BtnResetFont_Click"/>
+                            <Button Content="{DynamicResource Str_BtnSaveApply}" Style="{StaticResource PillButtonStyle}" Margin="0,0,8,0" Click="BtnSaveSettings_Click"/>
+                            <Button Content="{DynamicResource Str_BtnClose}" Style="{StaticResource SecondaryPillButtonStyle}" Click="BtnCloseSettings_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Border>
+
+            <!-- Multi-Step Clear History Confirmation Overlay (Step 2) -->
+            <Border x:Name="ClearConfirmOverlay" Background="{DynamicResource BrushOverlayBackdrop}" CornerRadius="12" Visibility="Collapsed">
+                <Border Background="{DynamicResource BrushBgSurface}" BorderBrush="{DynamicResource BrushDangerBorder}" BorderThickness="1.5"
+                        CornerRadius="12" Width="490" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="28" ShadowDepth="6" Opacity="0.45"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <Border Background="{DynamicResource BrushDangerHoverBg}" BorderBrush="{DynamicResource BrushDangerBorder}" BorderThickness="1" CornerRadius="14" Width="28" Height="28" Margin="0,0,10,0">
+                                <TextBlock Text="!" Foreground="{DynamicResource BrushDanger}" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="{DynamicResource Str_ClearModal_Title}" Foreground="{DynamicResource BrushDanger}" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <TextBlock Text="{DynamicResource Str_ClearModal_Subtitle}" Foreground="{DynamicResource BrushTextPrimary}" FontSize="14" TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                        <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,14">
+                            <TextBlock x:Name="TxtClearConfirmDetail" Text="" Foreground="{DynamicResource BrushTextSecondary}" FontSize="13.5" TextWrapping="Wrap"/>
+                        </Border>
+
+                        <CheckBox x:Name="ChkClearConfirmAck"
+                                  Foreground="{DynamicResource BrushTextPrimary}" FontSize="13.5" Margin="0,0,0,18"
+                                  Checked="ChkClearConfirmAck_Changed" Unchecked="ChkClearConfirmAck_Changed">
+                            <TextBlock Text="{DynamicResource Str_ClearModal_Ack}" TextWrapping="Wrap" MaxWidth="410"/>
+                        </CheckBox>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button x:Name="BtnCancelFinalClear" Content="{DynamicResource Str_Cancel}" Style="{StaticResource SecondaryPillButtonStyle}" Margin="0,0,10,0" Click="BtnCancelFinalClear_Click"/>
+                            <Button x:Name="BtnConfirmFinalClear" Content="{DynamicResource Str_ClearModal_ConfirmBtn}" Style="{StaticResource DangerFilledButtonStyle}" IsEnabled="False" Click="BtnConfirmFinalClear_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Border>
+
+            <!-- Multi-Paste Overlay -->
+            <Border x:Name="MultiPasteOverlay" Background="{DynamicResource BrushOverlayBackdrop}" CornerRadius="12" Visibility="Collapsed">
+                <Border Background="{DynamicResource BrushBgSurface}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1"
+                        CornerRadius="12" Width="540" Height="490" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource Str_Multi_Title}" Foreground="{DynamicResource BrushTextPrimary}" FontSize="17" FontWeight="Bold"/>
+                            <Button Style="{StaticResource GhostIconButtonStyle}" HorizontalAlignment="Right" Width="28" Height="28" Click="BtnCloseMultiPaste_Click">
+                                <Path Data="M 1,1 L 9,9 M 9,1 L 1,9" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="10" Height="10"/>
+                            </Button>
+                        </Grid>
+
+                        <Border Grid.Row="1" Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{DynamicResource Str_Multi_Separator}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5" Margin="0,0,0,4"/>
+                                    <ComboBox x:Name="CmbSeparator" Background="{DynamicResource BrushInputBg}" Foreground="{DynamicResource BrushTextPrimary}" FontSize="13" SelectionChanged="MultiPasteOption_Changed">
+                                        <ComboBoxItem Content="{DynamicResource Str_Multi_SepEnter}" Tag="&#x0d;&#x0a;" IsSelected="True"/>
+                                        <ComboBoxItem Content="{DynamicResource Str_Multi_SepDoubleEnter}" Tag="&#x0d;&#x0a;&#x0d;&#x0a;"/>
+                                        <ComboBoxItem Content="{DynamicResource Str_Multi_SepTab}" Tag="&#x09;"/>
+                                        <ComboBoxItem Content="{DynamicResource Str_Multi_SepComma}" Tag=", "/>
+                                        <ComboBoxItem Content="{DynamicResource Str_Multi_SepSpace}" Tag=" "/>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                    <TextBlock Text="{DynamicResource Str_Multi_Order}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12.5" Margin="0,0,0,4"/>
+                                    <ComboBox x:Name="CmbOrder" Background="{DynamicResource BrushInputBg}" Foreground="{DynamicResource BrushTextPrimary}" FontSize="13" SelectionChanged="MultiPasteOption_Changed">
+                                        <ComboBoxItem Content="{DynamicResource Str_Multi_OrderDesc}" Tag="desc" IsSelected="True"/>
+                                        <ComboBoxItem Content="{DynamicResource Str_Multi_OrderAsc}" Tag="asc"/>
+                                    </ComboBox>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <TextBox x:Name="TxtMultiPastePreview" Grid.Row="2" Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorderSubtle}"
+                                 Foreground="{DynamicResource BrushTextPrimary}" FontFamily="{StaticResource CodeFont}" FontSize="14"
+                                 TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Margin="0,0,0,14" Padding="10"/>
+
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="{DynamicResource Str_Multi_CopyOnly}" Style="{StaticResource SecondaryPillButtonStyle}" Margin="0,0,8,0" Click="BtnCopyMultiPaste_Click"/>
+                            <Button Content="{DynamicResource Str_Multi_PasteActive}" Style="{StaticResource PillButtonStyle}" Margin="0,0,8,0" Click="BtnExecuteMultiPaste_Click"/>
+                            <Button Content="{DynamicResource Str_BtnClose}" Style="{StaticResource SecondaryPillButtonStyle}" Click="BtnCloseMultiPaste_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
