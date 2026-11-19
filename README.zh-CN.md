@@ -4,6 +4,20 @@
 
 基于 C#（.NET 7 / WPF）与 SQLite 编写的轻量级 Windows 剪贴板管理工具。
 
+## 界面预览
+
+**深色主题 — 网页 HTML 预览与完整来源网址**
+
+![ClipFlux 深色主题预览](docs/screenshots/preview-dark.png)
+
+**浅色主题 — 中文界面**
+
+![ClipFlux 浅色中文界面](docs/screenshots/preview-zh.png)
+
+**偏好设置 — 多目标备份与数据管理**
+
+![ClipFlux 备份设置](docs/screenshots/settings-backup.png)
+
 ## 主要功能
 
 - **多格式记录**：捕获纯文本、富文本（RTF）、网页片段（HTML）、图像（PNG/DIB）和文件列表，使用 SQLite WAL 模式存储。

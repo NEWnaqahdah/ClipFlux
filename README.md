@@ -4,6 +4,20 @@
 
 A lightweight Windows clipboard manager written in C# (.NET 7 / WPF) and SQLite.
 
+## Screenshots
+
+**Dark Theme — HTML Preview & Source URL**
+
+![ClipFlux Dark Theme Preview](docs/screenshots/preview-dark.png)
+
+**Light Theme — Formatted Rich Text Preview**
+
+![ClipFlux Light Theme Preview](docs/screenshots/preview-light.png)
+
+**Backup & Sync Settings**
+
+![ClipFlux Backup Settings](docs/screenshots/settings-backup.png)
+
 ## Features
 
 - **Multi-format capture**: Stores plain text, RTF, HTML fragments, images (PNG/DIB), and file drop lists in a local SQLite database using WAL mode.
