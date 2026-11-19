@@ -1,0 +1,108 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.0.0)"
+        required: true
+        default: "v1.0.0"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 7 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "7.0.x"
+
+      - name: Resolve release version
+        id: meta
+        run: |
+          $tag = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}" } else { "${{ inputs.tag }}" }
+          if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "v1.0.0" }
+          $ver = $tag.TrimStart("v")
+          if ($ver -notmatch '^\d+\.\d+\.\d+$') { $ver = "1.0.0" }
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "ver=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Publish standalone win-x64 build
+        run: |
+          $tag = "${{ steps.meta.outputs.tag }}"
+          $ver = "${{ steps.meta.outputs.ver }}"
+          New-Item -ItemType Directory -Force -Path "artifacts", "dist/standalone" | Out-Null
+          dotnet publish ClipFlux.csproj -c Release -r win-x64 --self-contained true `
+            -p:Version=$ver `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:DebugType=none `
+            -p:DebugSymbols=false `
+            -p:Deterministic=true `
+            -o "dist/standalone"
+          Copy-Item "LICENSE" -Destination "dist/standalone/"
+          Compress-Archive -Path "dist/standalone/*" -DestinationPath "artifacts/ClipFlux-$tag-win-x64-standalone.zip" -Force
+
+      - name: Publish framework-dependent win-x64 build
+        run: |
+          $tag = "${{ steps.meta.outputs.tag }}"
+          $ver = "${{ steps.meta.outputs.ver }}"
+          New-Item -ItemType Directory -Force -Path "dist/fdd" | Out-Null
+          dotnet publish ClipFlux.csproj -c Release -r win-x64 --no-self-contained `
+            -p:Version=$ver `
+            -p:DebugType=none `
+            -p:DebugSymbols=false `
+            -p:Deterministic=true `
+            -o "dist/fdd"
+          Copy-Item "LICENSE" -Destination "dist/fdd/"
+          Compress-Archive -Path "dist/fdd/*" -DestinationPath "artifacts/ClipFlux-$tag-win-x64-framework-dependent.zip" -Force
+
+      - name: Generate SHA256 checksums
+        run: |
+          $tag = "${{ steps.meta.outputs.tag }}"
+          $zips = @(
+            "artifacts/ClipFlux-$tag-win-x64-standalone.zip",
+            "artifacts/ClipFlux-$tag-win-x64-framework-dependent.zip"
+          )
+          $lines = foreach ($z in $zips) {
+            $hash = (Get-FileHash -Path $z -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $(Split-Path $z -Leaf)"
+          }
+          [System.IO.File]::WriteAllLines((Join-Path $PWD "artifacts/SHA256SUMS.txt"), $lines, [System.Text.UTF8Encoding]::new($false))
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ steps.meta.outputs.tag }}"
+          $notesLines = @(
+            "## ClipFlux $tag (Windows x64)",
+            "",
+            "### Downloads",
+            "- **ClipFlux-$tag-win-x64-standalone.zip**: Self-contained single-file executable (no .NET runtime installation required).",
+            "- **ClipFlux-$tag-win-x64-framework-dependent.zip**: Compact build (requires [.NET 7 Desktop Runtime x64](https://dotnet.microsoft.com/download/dotnet/7.0)).",
+            "- **SHA256SUMS.txt**: SHA-256 verification checksums for both archives."
+          )
+          $notesFile = Join-Path $PWD "artifacts/release-notes.md"
+          [System.IO.File]::WriteAllLines($notesFile, $notesLines, [System.Text.UTF8Encoding]::new($false))
+
+          gh release create "$tag" `
+            "artifacts/ClipFlux-$tag-win-x64-standalone.zip" `
+            "artifacts/ClipFlux-$tag-win-x64-framework-dependent.zip" `
+            "artifacts/SHA256SUMS.txt" `
+            --title "ClipFlux $tag" `
+            --notes-file "$notesFile"
